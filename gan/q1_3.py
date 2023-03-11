@@ -16,11 +16,11 @@ def compute_discriminator_loss(
     TODO 1.3.1: Implement GAN loss for discriminator.
     Do not use discrim_interp, interp, lamb. They are placeholders for Q1.5.
     # """
-    criterion = torch.nn.BCEWithLogitsLoss()
+    # criterion = torch.nn.BCEWithLogitsLoss()
     discrim_real_ones = torch.full_like(discrim_real,1.0,dtype=torch.float).cuda()
     discrim_fake_zeros = torch.full_like(discrim_real,0.0,dtype=torch.float).cuda()
-    true = torch.zeros_like(discrim_real,dtype=torch.float)
-    false = torch.ones_like(discrim_fake,dtype=torch.float)
+    # true = torch.zeros_like(discrim_real,dtype=torch.float)
+    # false = torch.ones_like(discrim_fake,dtype=torch.float)
     loss1 = F.binary_cross_entropy_with_logits(discrim_real, discrim_real_ones)
     loss2 = F.binary_cross_entropy_with_logits(discrim_fake, discrim_fake_zeros)
     loss = (loss1 +loss2)/2

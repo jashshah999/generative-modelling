@@ -13,14 +13,20 @@ from torchvision.datasets import VisionDataset
 def build_transforms():
 	# TODO 1.2: Add two transforms:
 	# 1. Convert input image to tensor.
-	image_to_tensor = transforms.ToTensor()
-	# normalize_tensor = transforms.Normalize(mean = [0.5,0.5,0.5],std=[0.5,0.5,0.5])
-	# normalize_tensor = transforms.Lambda(lambda x: (x-0.5)*2)
-	normalize_tensor= transforms.Normalize([0.5], [0.5])
-	# ds_transforms = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = [0.5,0.5,0.5],std=[0.5,0.5,0.5])])
-	ds_transforms = transforms.Compose([image_to_tensor, normalize_tensor])
+	# image_to_tensor = transforms.ToTensor()
+	# # normalize_tensor = transforms.Normalize(mean = [0.5,0.5,0.5],std=[0.5,0.5,0.5])
+	# # normalize_tensor = transforms.Lambda(lambda x: (x-0.5)*2)
+	# # normalize_tensor= transforms.Normalize([0.5,0.5,0.5], [0.5,0.5,0.5])
+	# normalize_tensor = transforms.Normalize([0.5],[0.5])
+	# # ds_transforms = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = [0.5,0.5,0.5],std=[0.5,0.5,0.5])])
+	# ds_transforms = transforms.Compose([image_to_tensor, normalize_tensor])
 	# 2. Rescale input image to be between -1 and 1.
 	# NOTE: don't do anything fancy for 2, hint: the input image is between 0 and 1.
+	image_to_tensor = transforms.ToTensor()
+	# normalize_tensor = transforms.Normalize(mean = [0.5,0.5,0.5],std=[0.5,0.5,0.5])
+	normalize_tensor = transforms.Lambda(lambda x: (x-0.5)*2)
+	# ds_transforms = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = [0.5,0.5,0.5],std=[0.5,0.5,0.5])])
+	ds_transforms = transforms.Compose([image_to_tensor, normalize_tensor])
 	return ds_transforms
 
 def get_optimizers_and_schedulers(gen, disc):
@@ -34,9 +40,12 @@ def get_optimizers_and_schedulers(gen, disc):
 	# The learning rate for the generator should be decayed to 0 over 100K iterations.
 	# print(type(gen))
 	optim_discriminator = torch.optim.Adam(disc.parameters(), lr=2e-4, betas=(0, 0.9))
-	scheduler_discriminator = torch.optim.lr_scheduler.StepLR(optim_discriminator, step_size=1, gamma=0.9999)
+	# scheduler_discriminator = torch.optim.lr_scheduler.StepLR(optim_discriminator, step_size=5000, gamma=0.9999)
+	# scheduler_discriminator = torch.optim.lr_scheduler.
+	scheduler_discriminator = torch.optim.lr_scheduler.LambdaLR(optim_discriminator,lambda x: 1-x/500000)
 	optim_generator = torch.optim.Adam(gen.parameters(), lr=2e-4, betas=(0, 0.9))
-	scheduler_generator = torch.optim.lr_scheduler.StepLR(optim_generator, step_size=1, gamma=0.99999)
+	# scheduler_generator = torch.optim.lr_scheduler.StepLR(optim_generator, step_size=1000, gamma=0.997)
+	scheduler_generator = torch.optim.lr_scheduler.LambdaLR(optim_generator,lambda x: 1-x/100000)
 	return (
 		optim_discriminator,
 		scheduler_discriminator,
