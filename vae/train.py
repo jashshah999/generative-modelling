@@ -1,3 +1,4 @@
+
 import argparse
 from collections import OrderedDict
 import numpy as np
@@ -19,6 +20,13 @@ def ae_loss(model, x):
     TODO 2.2: fill in MSE loss between x and its reconstruction.
     return loss, {recon_loss = loss}
     """
+    z_value = model.encoder(x)
+    xhat = model.decoder(z_value)
+    # xhat = ae.encoder(x)
+    # z = ae.encoder(x)
+    # x.shape[1]
+    loss = torch.mean(torch.sum(torch.nn.MSELoss(reduction='none')(xhat, x).view(x.shape[0], -1), dim=1))
+
 
     return loss, OrderedDict(recon_loss=loss)
 
@@ -29,7 +37,20 @@ def vae_loss(model, x, beta = 1):
     (https://stats.stackexchange.com/questions/318748/deriving-the-kl-divergence-loss-for-vaes).
     return loss, {recon_loss = loss}
     """
-    return total_loss, OrderedDict(recon_loss=recon_loss, kl_loss=kl_loss)
+    x = x.cuda()
+    mu, logstd = model.encoder(x)
+    x_hat = model.decoder(mu)
+    # x_hat = model.decoder(x)
+    recon_loss = F.mse_loss(x_hat, x)
+    kl = -0.5 * (1 + (2*logstd) - mu.pow(2) - (2*logstd).exp())
+    
+    # total_kl = kl.sum(1).mean(dim=0)
+    
+    total_kl = kl.sum(1).mean(0, True)
+    beta_total_kl = beta*total_kl
+    total_loss = recon_loss + (beta_total_kl)
+
+    return total_loss, OrderedDict(recon_loss=recon_loss, kl_loss=total_kl)
 
 
 def constant_beta_scheduler(target_val = 1):
@@ -43,6 +64,7 @@ def linear_beta_scheduler(max_epochs=None, target_val = 1):
     from 0 at epoch 0 to target_val at epoch max_epochs
     """
     def _helper(epoch):
+        return target_val * epoch / max_epochs
     return _helper
 
 def run_train_epoch(model, loss_mode, train_loader, optimizer, beta = 1, grad_clip = 1):
@@ -51,6 +73,7 @@ def run_train_epoch(model, loss_mode, train_loader, optimizer, beta = 1, grad_cl
     for x, _ in train_loader:
         x = preprocess_data(x)
         if loss_mode == 'ae':
+            # print(x.shape)
             loss, _metric = ae_loss(model, x)
         elif loss_mode == 'vae':
             loss, _metric = vae_loss(model, x, beta)
@@ -72,6 +95,7 @@ def get_val_metrics(model, loss_mode, val_loader):
         for x, _ in val_loader:
             x = preprocess_data(x)
             if loss_mode == 'ae':
+                # print(x.shape)
                 _, _metric = ae_loss(model, x)
             elif loss_mode == 'vae':
                 _, _metric = vae_loss(model, x)
@@ -120,6 +144,7 @@ def main(log_dir, loss_mode = 'vae', beta_mode = 'constant', num_epochs = 20, ba
         save_plot(list(range(len(v))), v, "Epochs", k, "{k} vs. Epochs", 'data/' + log_dir + f'/{k}_vs_iterations')
 
 if __name__ == '__main__':
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     # argparser:
     parser = argparse.ArgumentParser()
     parser.add_argument('--log_dir', type=str, default='')
@@ -132,3 +157,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     main(args.log_dir, loss_mode = args.loss_mode, beta_mode = args.beta_mode, latent_size = args.latent_size, num_epochs=20, target_beta_val = args.target_beta_val)
+

@@ -7,7 +7,7 @@ import torch
 from networks import Discriminator, Generator
 import torch.nn.functional as F
 from train import train_model
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
 
 def compute_discriminator_loss(
     discrim_real, discrim_fake, discrim_interp=None, interp=None, lamb=None
@@ -31,28 +31,29 @@ def compute_discriminator_loss(
 
     # discrim_fake_zeros = torch.full_like(discrim_real,0.0,dtype=torch.float).cuda()
     # loss += criterion(discrim_fake, discrim_fake_zeros)
-    # print("Disc_Loss:",loss)
+    print("Disc_Loss:",loss)
+    # print(loss)
     return loss
-
 
 def compute_generator_loss(discrim_fake):
     """
     TODO 1.3.1: Implement GAN loss for generator.
     
     """
-    criterion = torch.nn.BCEWithLogitsLoss()
+    # criterion = torch.nn.BCEWithLogitsLoss()
     discrim_fake_ones = torch.full_like(discrim_fake,1.0,dtype=torch.float).cuda()
-    fool = torch.ones_like(discrim_fake,dtype=torch.float)
+    # fool = torch.ones_like(discrim_fake,dtype=torch.float)
     loss = F.binary_cross_entropy_with_logits(discrim_fake, discrim_fake_ones)
     # criterion = torch.nn.BCEWithLogitsLoss()
     # loss=0
     # discrim_fake_ones = torch.full_like(discrim_fake,1.0,dtype=torch.float).cuda()
     # loss += criterion(discrim_fake, discrim_fake_ones)
-    # print("Gen_Loss:",loss)
+    print("Gen_Loss:",loss)
     return loss
 
 
 if __name__ == "__main__":
+    os.environ["CUDA_VISIBLE_DEVICES"] = "2"
     args = get_args()
     gen = Generator().cuda()
     # gen = Generator()

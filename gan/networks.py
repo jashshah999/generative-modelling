@@ -327,7 +327,7 @@ class Generator(torch.jit.ScriptModule):
 	@torch.jit.script_method
 	def forward(self, n_samples: int = 1024):
 		# TODO 1.1: Generate n_samples latents and forward through the network.
-		z = torch.randn(n_samples, self.n_filters).cuda()
+		z = torch.randn(n_samples, self.n_filters,dtype=torch.half).uniform_(0.,1.).cuda()
 		out = self.dense_init(z).cuda()
 		out = out.reshape(-1, self.n_filters, 4, 4)
 		out = self.gen_block(out)

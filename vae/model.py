@@ -23,19 +23,48 @@ class Encoder(nn.Module):
         """
 
         #TODO 2.1: fill in self.fc, such that output dimension is self.latent_dim
+        # self.fc = nn.Linear(256,latent_dim)
+        self.convs = nn.Sequential(nn.Conv2d(in_channels=3, out_channels=32, kernel_size=(3,3),stride=1, padding=1),
+                                     nn.ReLU(),
+                                     nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(3,3),stride=2,padding=1),
+                                     nn.ReLU(),
+                                     nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(3,3),stride=2, padding=1),
+                                     nn.ReLU(),
+                                     nn.Conv2d(in_channels=128, out_channels=256, kernel_size=(3,3),stride=2,padding=1))
 
+        self.out_shape = 256*input_shape[1]//8 *input_shape[2]//8
+        self.fc = nn.Linear(self.out_shape,latent_dim)
+        
     def forward(self, x):
         #TODO 2.1 : forward pass through the network, output should be of dimension : self.latent_dim
+
+        x = self.convs(x)
+        x = x.view(x.shape[0],-1)
+        x = self.fc(x)
+        # print(x.shape)
+        # assert x.shape=
+
+        return x
+
 
 class VAEEncoder(Encoder):
     def __init__(self, input_shape, latent_dim):
         super().__init__(input_shape, latent_dim)
         #TODO 2.4: fill in self.fc, such that output dimension is 2*self.latent_dim
+        self.z_dim = 256
+        self.fc = nn.Sequential(nn.Linear(3072, self.z_dim),
+                                nn.Linear(self.z_dim, self.z_dim),
+                                nn.Linear(self.z_dim, 2*self.latent_dim),
+                                nn.LeakyReLU(0.2))
 
     def forward(self, x):
         #TODO 2.4: forward pass through the network.
         # should return a tuple of 2 tensors, mu and log_std
-        return mu, log_std
+        x = torch.flatten(x, 1)
+        out = self.fc(x)
+        mu, log_std = torch.split(out, self.latent_dim, dim=1)
+        return (mu, log_std)
+
 
 
 class Decoder(nn.Module):
@@ -43,8 +72,16 @@ class Decoder(nn.Module):
         super().__init__()
         self.latent_dim = latent_dim
         self.output_shape = output_shape
+        print(output_shape)
 
         #TODO 2.1: fill in self.base_size
+        # self.base_size = 128 * output_shape[1]//8 * output_shape[2]//8
+        # self.fc = nn.Linear(latent_dim, self.base_size)
+        self.base_size = (256, output_shape[1] // 8, output_shape[2] // 8)
+        self.fc = nn.Linear(latent_dim, np.prod(self.base_size))
+
+
+
 
         """
         TODO 2.1 : Fill in self.deconvs following the given architecture
@@ -60,8 +97,24 @@ class Decoder(nn.Module):
             )
         """
 
+        self.deconvs = nn.Sequential(nn.ReLU(),
+                                       nn.ConvTranspose2d(256,128, kernel_size=(4,4),stride=2,padding=1),
+                                       nn.ReLU(),
+                                       nn.ConvTranspose2d(128,64,kernel_size=(4,4),stride=2, padding=1),
+                                       nn.ReLU(),
+                                       nn.ConvTranspose2d(64,32,kernel_size=(4,4),stride=2, padding=1),
+                                       nn.ReLU(),
+                                       nn.Conv2d(32,3,kernel_size=(3,3),stride=1, padding=1))
+        
+
+
     def forward(self, z):
         #TODO 2.1: forward pass through the network, first through self.fc, then self.deconvs.
+        out  = self.fc(z)
+        # out = out.view(out.shape[0],self.base_size)
+        out = out.view(out.shape[0], *self.base_size)
+        out = self.deconvs(out)
+        
         return out
 
 class AEModel(nn.Module):
@@ -77,3 +130,4 @@ class AEModel(nn.Module):
             self.encoder = Encoder(input_shape, latent_size)
         self.decoder = Decoder(latent_size, input_shape)
     #NOTE: You don't need to implement a forward function for AEModel. For implementing the loss functions in train.py, call model.encoder and model.decoder directly.
+
